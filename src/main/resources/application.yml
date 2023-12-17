@@ -1,0 +1,18 @@
+# key? 32byte (256bit) ????? ??? ?. ??? ?? x jwt ??? ? ??
+jwt:
+  secretKey: 12345678901234567890123456789012
+  refreshKey: 12345678901234567890123456789012
+
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/examplesdb?useUnicode=true&serverTimezone=Asia/Seoul
+    username: park
+    password: 1234
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
