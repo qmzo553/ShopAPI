@@ -1,5 +1,7 @@
 package com.example.shopapi.config;
 
+import com.example.shopapi.domain.Role;
+import com.example.shopapi.repository.RoleRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

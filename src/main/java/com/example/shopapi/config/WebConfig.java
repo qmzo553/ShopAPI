@@ -1,5 +1,6 @@
 package com.example.shopapi.config;
 
+import com.example.shopapi.security.jwt.util.IfLoginArgumentResolver;
 import java.util.List;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
