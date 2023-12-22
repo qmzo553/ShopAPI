@@ -1,12 +1,18 @@
 package com.example.shopapi.controller;
 
 import com.example.shopapi.domain.Member;
+import com.example.shopapi.domain.RefreshToken;
+import com.example.shopapi.dto.MemberLoginDto;
+import com.example.shopapi.dto.MemberLoginResponseDto;
 import com.example.shopapi.dto.MemberSignupDto;
 import com.example.shopapi.dto.MemberSignupResponseDto;
 import com.example.shopapi.security.jwt.util.JwtTokenizer;
 import com.example.shopapi.service.MemberService;
 import com.example.shopapi.service.RefreshTokenService;
+import com.example.shopapi.domain.Role;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,5 +60,34 @@ public class MemberController {
         memberSignupResponse.setEmail(saveMember.getEmail());
 
         return new ResponseEntity(memberSignupResponse, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity login(@RequestBody @Valid MemberLoginDto loginDto, BindingResult bindingResult) {
+        if(bindingResult.hasErrors()) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
+        // email이 없을 경우 Exception이 발생한다. Global Exception에 대한 처리가 필요하다.
+        Member member = memberService.findByEmail(loginDto.getEmail());
+        if(!passwordEncoder.matches(loginDto.getPassword(), member.getPassword())) {
+            return new ResponseEntity(HttpStatus.UNAUTHORIZED);
+        }
+        List<String> roles = member.getRoles().stream().map(Role::getName).collect(Collectors.toList());
+
+        String accessToken = jwtTokenizer.createAccessToken(member.getMemberId(), member.getEmail(), member.getName(), roles);
+        String refreshToken = jwtTokenizer.createRefreshToken(member.getMemberId(), member.getEmail(), member.getName(), roles);
+
+        RefreshToken refreshTokenEntity = new RefreshToken();
+        refreshTokenEntity.setValue(refreshToken);
+        refreshTokenEntity.setMemberId(member.getMemberId());
+
+        MemberLoginResponseDto loginResponse = MemberLoginResponseDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .memberId(member.getMemberId())
+                .nickname(member.getName())
+                .build();
+        return new ResponseEntity(loginResponse, HttpStatus.OK);
     }
 }
