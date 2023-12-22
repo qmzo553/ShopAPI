@@ -11,6 +11,7 @@ import com.example.shopapi.security.jwt.util.JwtTokenizer;
 import com.example.shopapi.service.MemberService;
 import com.example.shopapi.service.RefreshTokenService;
 import com.example.shopapi.domain.Role;
+import io.jsonwebtoken.Claims;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -98,5 +99,33 @@ public class MemberController {
     public ResponseEntity logout(@RequestBody RefreshTokenDto refreshTokenDto) {
         refreshTokenService.deleteRefreshToken(refreshTokenDto.getRefreshToken());
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    /*
+    1. 전달받은 유저의 아이디로 유저가 존재하는지 확인한다.
+    2. RefreshToken이 유효한지 체크한다.
+    3. AccessToken을 발급하여 기존 RefreshToken과 함께 응답한다.
+     */
+    @PostMapping("/refreshToken")
+    public ResponseEntity requestRefresh(@RequestBody RefreshTokenDto refreshTokenDto) {
+        RefreshToken refreshToken = refreshTokenService.findRefreshToken(refreshTokenDto.getRefreshToken())
+                .orElseThrow(() -> new IllegalArgumentException("Refresh Token not found"));
+        Claims claims = jwtTokenizer.parseRefreshToken(refreshToken.getValue());
+
+        Long memberId = Long.valueOf((Integer)claims.get("memberId"));
+        Member member = memberService.getMember(memberId).orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+        List roles = (List) claims.get("roles");
+        String email = claims.getSubject();
+
+        String accessToken = jwtTokenizer.createAccessToken(memberId, email, member.getName(), roles);
+
+        MemberLoginResponseDto loginResponse = MemberLoginResponseDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshTokenDto.getRefreshToken())
+                .memberId(member.getMemberId())
+                .nickname(member.getName())
+                .build();
+        return new ResponseEntity(loginResponse, HttpStatus.OK);
     }
 }
