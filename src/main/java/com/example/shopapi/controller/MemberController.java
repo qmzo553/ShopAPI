@@ -6,6 +6,7 @@ import com.example.shopapi.dto.MemberLoginDto;
 import com.example.shopapi.dto.MemberLoginResponseDto;
 import com.example.shopapi.dto.MemberSignupDto;
 import com.example.shopapi.dto.MemberSignupResponseDto;
+import com.example.shopapi.dto.RefreshTokenDto;
 import com.example.shopapi.security.jwt.util.JwtTokenizer;
 import com.example.shopapi.service.MemberService;
 import com.example.shopapi.service.RefreshTokenService;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -78,6 +80,7 @@ public class MemberController {
         String accessToken = jwtTokenizer.createAccessToken(member.getMemberId(), member.getEmail(), member.getName(), roles);
         String refreshToken = jwtTokenizer.createRefreshToken(member.getMemberId(), member.getEmail(), member.getName(), roles);
 
+        // RefreshToken을 DB에 저장한다. 성능 때문에 DB가 아니라 Redis에 저장하는 것이 좋다.
         RefreshToken refreshTokenEntity = new RefreshToken();
         refreshTokenEntity.setValue(refreshToken);
         refreshTokenEntity.setMemberId(member.getMemberId());
@@ -89,5 +92,11 @@ public class MemberController {
                 .nickname(member.getName())
                 .build();
         return new ResponseEntity(loginResponse, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/logout")
+    public ResponseEntity logout(@RequestBody RefreshTokenDto refreshTokenDto) {
+        refreshTokenService.deleteRefreshToken(refreshTokenDto.getRefreshToken());
+        return new ResponseEntity(HttpStatus.OK);
     }
 }
